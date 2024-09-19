@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formative Feedback Radar Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .chart-container {
+            width: 100%;
+            height: 400px;
+        }
+        .inputs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .inputs input {
+            flex: 1 1 45%;
+        }
+        .buttons {
+            margin-top: 20px;
+        }
+        .buttons button {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Formative Feedback Radar Chart</h2>
+    <p>Enter percentages for each category (0% - 100%):</p>
+    
+    <!-- Input fields for student data -->
+    <div class="inputs">
+        <label>Acquisition of Knowledge: <input type="number" id="knowledge" min="0" max="100" value="50"></label>
+        <label>Development: <input type="number" id="development" min="0" max="100" value="50"></label>
+        <label>Reflection: <input type="number" id="reflection" min="0" max="100" value="50"></label>
+        <label>Resolution: <input type="number" id="resolution" min="0" max="100" value="50"></label>
+        <label>Communication: <input type="number" id="communication" min="0" max="100" value="50"></label>
+        <label>Engagement: <input type="number" id="engagement" min="0" max="100" value="50"></label>
+    </div>
+
+    <!-- Buttons -->
+    <div class="buttons">
+        <button onclick="downloadImage()">Download Chart as Image</button>
+    </div>
+
+    <!-- Radar Chart -->
+    <div class="chart-container">
+        <canvas id="radarChart"></canvas>
+    </div>
+</div>
+
+<script>
+    // Set up the radar chart using Chart.js
+    const ctx = document.getElementById('radarChart').getContext('2d');
+    const radarChart = new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: ['Acquisition of Knowledge', 'Development', 'Reflection', 'Resolution', 'Communication', 'Engagement'],
+            datasets: [{
+                label: 'Student Progress',
+                data: [50, 50, 50, 50, 50, 50], // Initial data
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 2,
+            }]
+        },
+        options: {
+            scale: {
+                ticks: {
+                    min: 0,  // Minimum value for the scale
+                    max: 100, // Maximum value for the scale
+                    stepSize: 10, // Show ticks every 10%
+                    callback: function(value) {
+                        return value + "%"; // Display percentage symbol
+                    }
+                }
+            }
+        }
+    });
+
+    // Function to update the radar chart when inputs change
+    function updateChart() {
+        radarChart.data.datasets[0].data = [
+            document.getElementById('knowledge').value,
+            document.getElementById('development').value,
+            document.getElementById('reflection').value,
+            document.getElementById('resolution').value,
+            document.getElementById('communication').value,
+            document.getElementById('engagement').value
+        ];
+        radarChart.update();
+    }
+
+    // Add event listeners to input fields to auto-update the chart
+    const inputs = document.querySelectorAll('.inputs input');
+    inputs.forEach(input => {
+        input.addEventListener('input', updateChart);
+    });
+
+    // Function to download the chart as an image
+    function downloadImage() {
+        // Set the canvas size to 1000 x 1000 pixels
+        const canvas = document.getElementById('radarChart');
+        const originalWidth = canvas.width;
+        const originalHeight = canvas.height;
+        canvas.width = 1000;
+        canvas.height = 1000;
+
+        // Update chart to fit new canvas size
+        radarChart.resize();
+        radarChart.update();
+
+        // Generate and download the image
+        const imageUrl = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.href = imageUrl;
+        link.download = 'radar-chart.png';
+        link.click();
+
+        // Restore original canvas size
+        canvas.width = originalWidth;
+        canvas.height = originalHeight;
+        radarChart.resize();
+        radarChart.update();
+    }
+</script>
+
+</body>
+</html>
