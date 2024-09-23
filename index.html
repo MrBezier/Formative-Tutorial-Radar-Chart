@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formative Feedback Radar Chart (Top Padding for Label)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #121212;  /* Dark background for dark mode */
+            color: #e0e0e0;  /* Light text for dark mode */
+        }
+        .container {
+            max-width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        h2 {
+            font-size: 1.5em;
+            text-align: center;
+            color: #ffffff;
+        }
+        p {
+            text-align: center;
+            font-size: 0.9em;
+            color: #cccccc;
+            margin: 5px 0;
+        }
+        .chart-container {
+            width: 100%;
+            max-width: 600px; /* Increased width to allow more space */
+            height: 420px;    /* Slightly increased height for padding */
+            margin: 5px auto 10px; /* Added margin for spacing */
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            padding-top: 5px;  /* Add padding at the top to prevent label clipping */
+        }
+        .inputs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 10px 0;
+        }
+        .inputs label {
+            flex: 1 1 30%;
+            max-width: 150px;
+            color: #e0e0e0;
+        }
+        .inputs input {
+            width: 100%;
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid #333;
+            background-color: #333;
+            color: #ffffff;
+        }
+        button {
+            display: block;
+            width: 150px;
+            margin: 10px auto;
+            padding: 8px;
+            font-size: 1em;
+            background-color: #6200ea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #3700b3;
+        }
+        @media (max-width: 768px) {
+            h2 {
+                font-size: 1.2em;
+            }
+            .inputs label {
+                flex: 1 1 45%;
+            }
+        }
+        @media (max-width: 480px) {
+            h2 {
+                font-size: 1.1em;
+            }
+            p {
+                font-size: 0.8em;
+            }
+            .inputs label {
+                flex: 1 1 100%;
+            }
+            .chart-container {
+                height: 320px; /* Adjust for smaller screens */
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Formative Feedback Radar Chart</h2>
+    <p>Enter percentages for each category (0% - 100%):</p>
+
+    <!-- Chart container -->
+    <div class="chart-container">
+        <canvas id="radarChart"></canvas>
+    </div>
+
+    <!-- Input fields for dynamic values -->
+    <div class="inputs">
+        <label>Knowledge: <input type="number" id="knowledge" min="0" max="100" value="40"></label>
+        <label>Development: <input type="number" id="development" min="0" max="100" value="40"></label>
+        <label>Reflection: <input type="number" id="reflection" min="0" max="100" value="40"></label>
+        <label>Resolution: <input type="number" id="resolution" min="0" max="100" value="40"></label>
+        <label>Communication: <input type="number" id="communication" min="0" max="100" value="40"></label>
+        <label>Engagement: <input type="number" id="engagement" min="0" max="100" value="40"></label>
+    </div>
+
+    <button onclick="downloadHighResImage()">Download</button>
+</div>
+
+<script>
+    const canvas = document.getElementById('radarChart');
+    const ctx = canvas.getContext('2d');
+
+    // Categories and values
+    const categories = ['Knowledge', 'Development', 'Reflection', 'Resolution', 'Communication', 'Engagement'];
+
+    const maxValue = 100;
+    const angleStep = (Math.PI * 2) / categories.length;
+    const rotationOffset = -Math.PI / 2;  // Rotate by 90 degrees to start "Knowledge" at the top
+
+    // Adjust canvas size to maintain the correct proportions
+    function adjustCanvasSize() {
+        canvas.width = canvas.parentElement.offsetWidth;
+        canvas.height = canvas.parentElement.offsetHeight;  // Adjust to parent container's height
+    }
+
+    // Function to generate random transparent color with 30% opacity
+    function getRandomTransparentColor() {
+        const r = Math.floor(Math.random() * 256);
+        const g = Math.floor(Math.random() * 256);
+        const b = Math.floor(Math.random() * 256);
+        return `rgba(${r}, ${g}, ${b}, 0.3)`;
+    }
+
+    // Function to check if any input is less than or equal to 40
+    function shouldUseGreyColor() {
+        const values = [
+            parseInt(document.getElementById('knowledge').value),
+            parseInt(document.getElementById('development').value),
+            parseInt(document.getElementById('reflection').value),
+            parseInt(document.getElementById('resolution').value),
+            parseInt(document.getElementById('communication').value),
+            parseInt(document.getElementById('engagement').value),
+        ];
+        return values.some(value => value <= 40);
+    }
+
+    // Draw radar chart on a given context
+    function drawRadarChart(values, ctx, fillColor = 'rgba(54, 162, 235, 0.3)', labelColor = '#ffffff') {
+        const radius = Math.min(canvas.width, canvas.height) / 2.5;
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2 + 10;  // Move the center down to prevent label clipping
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);  // Clear the canvas before drawing
+
+        // Draw the background circles (spiderweb)
+        ctx.strokeStyle = '#ddd';
+        for (let i = 0; i <= 5; i++) {
+            const r = (radius / 5) * i;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        // Draw category axes
+        ctx.strokeStyle = '#bbb';
+        for (let i = 0; i < categories.length; i++) {
+            const angle = angleStep * i + rotationOffset;  // Apply rotation offset
+            const x = centerX + Math.cos(angle) * radius;
+            const y = centerY + Math.sin(angle) * radius;
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+        }
+
+        // Draw the radar shape (based on values)
+        ctx.fillStyle = fillColor;  // Use the fillColor parameter with transparency
+        ctx.strokeStyle = 'rgba(54, 162, 235, 1)';
+        ctx.beginPath();
+        for (let i = 0; i < values.length; i++) {
+            const valueRatio = values[i] / maxValue;
+            const angle = angleStep * i + rotationOffset;  // Apply rotation offset
+            const x = centerX + Math.cos(angle) * radius * valueRatio;
+            const y = centerY + Math.sin(angle) * radius * valueRatio;
+            if (i === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Draw category labels with specific alignment
+        ctx.fillStyle = labelColor;  // Set label color dynamically (white for browser, black for download)
+        ctx.font = '12pt Arial';
+        for (let i = 0; i < categories.length; i++) {
+            const angle = angleStep * i + rotationOffset;
+            const x = centerX + Math.cos(angle) * (radius + 30); // Adjust label position
+            const y = centerY + Math.sin(angle) * (radius + 30); // Adjust label position
+
+            ctx.textAlign = (i === 0 || i === 3) ? 'center' : (i < 3 ? 'left' : 'right');
+            ctx.fillText(categories[i], x, y);
+        }
+    }
+
+    // Update chart based on input values
+    function updateChart() {
+        const values = [
+            parseInt(document.getElementById('knowledge').value),
+            parseInt(document.getElementById('development').value),
+            parseInt(document.getElementById('reflection').value),
+            parseInt(document.getElementById('resolution').value),
+            parseInt(document.getElementById('communication').value),
+            parseInt(document.getElementById('engagement').value),
+        ];
+
+        const fillColor = shouldUseGreyColor() ? 'rgba(169, 169, 169, 0.3)' : getRandomTransparentColor();
+        drawRadarChart(values, ctx, fillColor, '#ffffff');
+    }
+
+    // Adjust canvas size initially and on window resize
+    window.addEventListener('resize', () => {
+        adjustCanvasSize();
+        updateChart();  // Redraw chart after resizing
+    });
+
+    // Add event listeners to input fields
+    document.querySelectorAll('input').forEach(input => {
+        input.addEventListener('input', updateChart);
+    });
+
+    // Initialize chart
+    adjustCanvasSize();
+    updateChart();
+
+    // Download high-resolution image
+    function downloadHighResImage() {
+        const exportCanvas = document.createElement('canvas');
+        const exportCtx = exportCanvas.getContext('2d');
+        const scaleFactor = 5;
+        const exportWidth = canvas.width * scaleFactor;
+        const exportHeight = canvas.height * scaleFactor;
+
+        exportCanvas.width = exportWidth;
+        exportCanvas.height = exportHeight;
+        exportCtx.scale(scaleFactor, scaleFactor);
+
+        const values = [
+            parseInt(document.getElementById('knowledge').value),
+            parseInt(document.getElementById('development').value),
+            parseInt(document.getElementById('reflection').value),
+            parseInt(document.getElementById('resolution').value),
+            parseInt(document.getElementById('communication').value),
+            parseInt(document.getElementById('engagement').value),
+        ];
+
+        const fillColor = shouldUseGreyColor() ? 'rgba(169, 169, 169, 0.3)' : getRandomTransparentColor();
+        drawRadarChart(values, exportCtx, fillColor, '#000000');
+
+        const link = document.createElement('a');
+        link.href = exportCanvas.toDataURL('image/png', 1.0);
+        link.download = 'high-res-radar-chart.png';
+        link.click();
+    }
+</script>
+
+</body>
+</html>
